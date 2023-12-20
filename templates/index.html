@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Document</title>
+
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+      crossorigin="anonymous"
+    />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='FathGrid.js') }}"></script>
+  </head>
+
+  <body>
+    <div class="container-fluid">
+      <h1>FathGrid demo</h1>
+
+      <div style="display: flex">
+        <div style="flex-grow: 1">
+          Records per page:
+          <select id="selSize" onchange="t1.setPageSize(this.value)">
+            <option value="5">5</option>
+            <option selected value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="0">All</option>
+          </select>
+        </div>
+        <div style="flex-grow: 1">
+          <div class="input-group mb-3">
+            <div class="input-group-prepend">
+              <span class="input-group-text" id="inputGroup-sizing-default"
+                >Search</span
+              >
+            </div>
+            <input
+              onchange="t1.search(this.value)"
+              type="text"
+              class="form-control"
+              aria-label="Default"
+              aria-describedby="inputGroup-sizing-default"
+            />
+          </div>
+        </div>
+      </div>
+
+      <table id="table1" class="table table-hover table-bordered">
+        <thead class="thead-light"></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <script>
+      var t1 = FathGrid('table1', {
+        size: 10,
+        editable: true,
+        filterable: true,
+        sortable: true,
+        showFooter: false,
+
+        onChange: function (item, col, old, value) {
+          console.log('onChange:', item.id, col, old, value);
+          return value == '' ? false : true;
+        },
+
+        rowClass: function (dr, idx) {
+          return dr.id == 3 ? 'table-info' : dr.id == 9 ? 'table-warning' : '';
+        },
+
+        inputClass: 'form-control',
+        selectColumns: true,
+
+        columns: [
+          {
+            header: 'Country',
+            name: 'country',
+            visible: false,
+          }, //invisible grouping column
+          {
+            header: 'Name',
+            name: 'name',
+            //listOfValues:["Abel","Ahmed"],//list of values for edit, or a function(data,col) which returns list of values
+          },
+          {
+            header: 'Email',
+            name: 'email',
+            filter: null, //array of filter values or null for auto-generation of filter list
+            //editable:function(data,col){return data.id>3}, //is field editable
+          },
+          {
+            header: 'Phone',
+            name: 'phone',
+            type: 'number', //edit input type: text, date, email, checkbox
+          },
+          {
+            header: 'Address',
+            name: 'address',
+            type: 'text',
+            editable: true,
+            class: 'text-right',
+            footer: FathGrid.SUM,
+            groupFooter: FathGrid.SUM,
+          },
+        ],
+        data: {{ user_data|tojson }},
+        showGraph: false,
+      });
+
+      window.addEventListener('beforeunload', function () {
+        localStorage.setItem('t1_config', t1.saveConfig());
+      });
+
+      var objConfig = localStorage.getItem('t1_config');
+
+      // t1.render();
+
+      if (objConfig !== null) t1.loadConfig(objConfig);
+
+      // t1.render();
+
+      document.querySelector('#selSize').value = t1.getPageSize();
+    </script>
+  </body>
+</html>

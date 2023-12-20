@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+      crossorigin="anonymous"
+    />
+
+    <title>FathGrid demo!</title>
+
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+
+    <script src="{{ url_for('static', filename='FathGrid.js') }}"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12">
+          <h1>FathGrid with json data</h1>
+
+          <div style="display: flex">
+            <div style="flex-grow: 1">
+              Records per page:
+              <select onchange="t1.setPageSize(this.value)">
+                <option value="5">5</option>
+                <option selected value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+              </select>
+            </div>
+            <div style="flex-grow: 1">
+              <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                  <span class="input-group-text" id="inputGroup-sizing-default"
+                    >Search</span
+                  >
+                </div>
+                <input
+                  onchange="t1.search(this.value)"
+                  type="text"
+                  class="form-control"
+                  aria-label="Default"
+                  aria-describedby="inputGroup-sizing-default"
+                />
+              </div>
+            </div>
+          </div>
+
+          <form id="postagem" method="post">
+            <p>Inserir dados</p>
+            <input type="text" name="name" placeholder="name" />
+            <input type="text" name="email" placeholder="email" />
+            <input type="text" name="phone" placeholder="phone" />
+            <input type="text" name="address" placeholder="address" />
+            <button type="submit" onclick="reloadTable(event)">Inserir</button>
+          </form>
+
+          <table id="table1" class="table table-hover table-bordered">
+            <thead class="thead-light"></thead>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let t1;
+      async function fetchData() {
+        try {
+          const postsResponse = await fetch('http://127.0.0.1:5000/data');
+          const postsJson = await postsResponse.json();
+
+          return { postsJson };
+        } catch (error) {
+          console.error('Error fetching data:', error);
+          throw error; // Propagate the error
+        }
+      }
+
+      async function renderTable() {
+        try {
+          const { postsJson } = await fetchData();
+
+          t1 = FathGrid('table1', {
+            size: 12,
+            inputClass: 'form-control',
+            editable: true,
+            onChange: function (data, col, old, value) {
+              return value == '' ? false : true;
+            },
+            columns: [
+              {
+                header: 'Name',
+                name: 'name',
+              },
+              {
+                header: 'Email',
+                name: 'email',
+                filter: null,
+              },
+              {
+                header: 'Phone',
+                name: 'phone',
+                type: 'number',
+              },
+              {
+                header: 'Address',
+                name: 'address',
+                type: 'text',
+                editable: true,
+                class: 'text-right',
+                footer: FathGrid.SUM,
+                groupFooter: FathGrid.SUM,
+              },
+            ],
+            data: postsJson,
+          });
+
+          return t1;
+        } catch (error) {
+          console.error('Error rendering table:', error);
+        }
+      }
+
+      renderTable().then((t1) => {
+        document
+          .querySelector('input[title*="name"]')
+          .addEventListener('input', () => {
+            t1.render();
+          });
+
+        document
+          .querySelector('input[title*="phone"]')
+          .addEventListener('input', () => {
+            t1.render();
+          });
+      });
+
+      async function reloadTable(e) {
+        e.preventDefault();
+
+        const formData = {
+          name: document.querySelector('input[name="name"]').value,
+          email: document.querySelector('input[name="email"]').value,
+          phone: document.querySelector('input[name="phone"]').value,
+          address: document.querySelector('input[name="address"]').value,
+        }
+
+        const response = await fetch('http://127.0.0.1:5000/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+
+        try {
+          t1.insertRow(0, formData); // Set new data
+          // t1.render(); // Render the table
+        } catch (error) {
+          console.error('Error reloading table:', error);
+        }
+      }
+    </script>
+  </body>
+</html>
